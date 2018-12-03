@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     DKSBoxTextRecognizationParam  param = {"0"};  
     char* result;
 
-    DKSBox box = {0,0,90,0,90,70,0,70};
+    DKSBox box = {0,0,180,0,180,70,0,70};
     DKBoxTextRecognizationInit();
 
     
