@@ -3,13 +3,20 @@
 #include "net.h"
 #include "text_recognization.h"
 #include <omp.h>
-
+using namespace std;
 static ncnn::Net netCrnn;
 
 void DKBoxTextRecognizationInit()
 {
+//    clock_t start = clock();
     netCrnn.load_param("crnn.param");
+//    clock_t finsh = clock();
+//    printf("param : %ld\n", finsh - start);
+//    start = clock();
     netCrnn.load_model("crnn.bin");
+//    finsh = clock();
+//    printf("bin : %ld\n", finsh - start);
+     
 }
 
 char* DKBoxTextRecognizationProcess(const char* imgfilename, DKSBox box, DKSBoxTextRecognizationParam param)
@@ -35,6 +42,8 @@ char* DKBoxTextRecognizationProcess(const char* imgfilename, DKSBox box, DKSBoxT
     ncnn::Mat img;
     img.create(col, row, 3, 1);
     
+//    clock_t start, finsh;
+
     #pragma omp parallel for     
     for(int i = y_top; i < y_bottom; i++)
     {
@@ -59,12 +68,15 @@ char* DKBoxTextRecognizationProcess(const char* imgfilename, DKSBox box, DKSBoxT
         *((float*)input_data.data+i) = ((*((float*)input_data.data+i))/255.f - 0.5)/0.5;
     }
 
+//    start = clock();    
     ncnn::Extractor ex = netCrnn.create_extractor();
-//    ex.set_num_threads(2);
+    ex.set_num_threads(4);
     ex.set_light_mode(true);
     ex.input("data", input_data);
     ex.extract("preds", pred);
 
+//    finsh = clock();
+//    cout << "extract fe cost " << (finsh - start)/1000 << "ms" << endl;             
     //对输出字符索引解码得到字符串。
     float maxprob; 
     int pre_index = 0;
@@ -90,7 +102,15 @@ char* DKBoxTextRecognizationProcess(const char* imgfilename, DKSBox box, DKSBoxT
         pre_index = char_index;
     }
     result.push_back('\0');
-    return (char*)result.data();
+
+    if(param.lexicon)
+    {
+        return minDistanceWord((char*)result.data());
+    }
+    else
+    {
+        return result.data();
+    }
 }
 
 void DKBoxTextRecognizationEnd()
