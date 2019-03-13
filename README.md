@@ -1,4 +1,4 @@
-# demo for crnn
+# demo for crnn（输入图片文件，）
 
 编译执行：
 ```
